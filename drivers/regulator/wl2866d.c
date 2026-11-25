@@ -130,8 +130,15 @@ static int wl2866d_add_ldo(struct wl2866d_chip *chip, struct device_node *node)
 	if (ret)
 		return ret;
 	ret = of_property_read_u32(node, "offset", &offset);
-	if (ret || offset > 3)
-		return ret ? ret : -EINVAL;
+	if (ret) {
+		u16 offset16;
+		ret = of_property_read_u16(node, "offset", &offset16);
+		if (ret)
+			return ret;
+		offset = offset16;
+	}
+	if (offset > 3)
+		return -EINVAL;
 	if (strcmp(name, wl2866d_channel_names[offset])) {
 		dev_err(chip->dev, "regulator %s has invalid channel offset %u\n",
 			name, offset);
