@@ -6,6 +6,7 @@
 #include <linux/regmap.h>
 #include <linux/regulator/driver.h>
 #include <linux/regulator/of_regulator.h>
+#include <linux/string.h>
 
 #define WL2866D_ENABLE_REG 0x0e
 #define WL2866D_VSET_BASE 0x03
@@ -14,6 +15,13 @@
 #define WL2866D_DVDD_STEP_UV 6000
 #define WL2866D_AVDD_BASE_UV 1200000
 #define WL2866D_AVDD_STEP_UV 12500
+
+static const char * const wl2866d_channel_names[] = {
+	"wl2866d-dvdd1",
+	"wl2866d-dvdd2",
+	"wl2866d-avdd1",
+	"wl2866d-avdd2",
+};
 
 struct wl2866d_chip { struct device *dev; struct regmap *map; };
 struct wl2866d_ldo {
@@ -118,6 +126,11 @@ static int wl2866d_add_ldo(struct wl2866d_chip *chip, struct device_node *node)
 	ret = of_property_read_u32(node, "offset", &offset);
 	if (ret || offset > 3)
 		return ret ? ret : -EINVAL;
+	if (strcmp(name, wl2866d_channel_names[offset])) {
+		dev_err(chip->dev, "regulator %s has invalid channel offset %u\n",
+			name, offset);
+		return -EINVAL;
+	}
 
 	ldo = devm_kzalloc(chip->dev, sizeof(*ldo), GFP_KERNEL);
 	if (!ldo)
