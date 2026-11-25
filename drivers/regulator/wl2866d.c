@@ -84,8 +84,10 @@ static int wl2866d_set_voltage(struct regulator_dev *rdev, int min_uv, int max_u
 		WL2866D_AVDD_MAX_UV;
 	int ret;
 
-	if (min_uv < base || max_uv < min_uv || max_uv > max_uv_supported)
+	if (max_uv < min_uv || max_uv < base || min_uv > max_uv_supported)
 		return -EINVAL;
+	if (min_uv < base)
+		min_uv = base;
 	code = DIV_ROUND_UP(min_uv - base, step);
 	actual = base + code * step;
 	if (actual > max_uv || actual > max_uv_supported || code > U8_MAX)
