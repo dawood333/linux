@@ -181,6 +181,7 @@ static int wl2866d_probe(struct i2c_client *client)
 	ret = regmap_read(chip->map, 0x00, &pid);
 	if (ret)
 		return dev_err_probe(chip->dev, ret, "product ID read failed\n");
+	dev_info(chip->dev, "WL2866D-compatible device detected, product ID 0x%02x\n", pid);
 	ret = regmap_write(chip->map, WL2866D_DISCHARGE_REG, 0xff);
 	if (ret)
 		return dev_err_probe(chip->dev, ret, "discharge setup failed\n");
