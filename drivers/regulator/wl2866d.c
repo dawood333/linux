@@ -13,8 +13,10 @@
 #define WL2866D_DISCHARGE_REG 0x02
 #define WL2866D_DVDD_BASE_UV 600000
 #define WL2866D_DVDD_STEP_UV 6000
+#define WL2866D_DVDD_MAX_UV 1800000
 #define WL2866D_AVDD_BASE_UV 1200000
 #define WL2866D_AVDD_STEP_UV 12500
+#define WL2866D_AVDD_MAX_UV 4300000
 
 static const char * const wl2866d_channel_names[] = {
 	"wl2866d-dvdd1",
@@ -78,13 +80,15 @@ static int wl2866d_set_voltage(struct regulator_dev *rdev, int min_uv, int max_u
 	unsigned int base = ldo->dvdd ? WL2866D_DVDD_BASE_UV : WL2866D_AVDD_BASE_UV;
 	unsigned int step = ldo->dvdd ? WL2866D_DVDD_STEP_UV : WL2866D_AVDD_STEP_UV;
 	unsigned int code, actual;
+	unsigned int max_uv_supported = ldo->dvdd ? WL2866D_DVDD_MAX_UV :
+		WL2866D_AVDD_MAX_UV;
 	int ret;
 
-	if (min_uv < base || max_uv < min_uv)
+	if (min_uv < base || max_uv < min_uv || max_uv > max_uv_supported)
 		return -EINVAL;
 	code = DIV_ROUND_UP(min_uv - base, step);
 	actual = base + code * step;
-	if (actual > max_uv || code > U8_MAX)
+	if (actual > max_uv || actual > max_uv_supported || code > U8_MAX)
 		return -EINVAL;
 	ret = regmap_write(ldo->chip->map, WL2866D_VSET_BASE + ldo->offset, code);
 	if (!ret && selector)
@@ -102,12 +106,14 @@ static int wl2866d_program_init_voltage(struct wl2866d_ldo *ldo)
 {
 	unsigned int base = ldo->dvdd ? WL2866D_DVDD_BASE_UV : WL2866D_AVDD_BASE_UV;
 	unsigned int step = ldo->dvdd ? WL2866D_DVDD_STEP_UV : WL2866D_AVDD_STEP_UV;
+	unsigned int max_uv_supported = ldo->dvdd ? WL2866D_DVDD_MAX_UV :
+		WL2866D_AVDD_MAX_UV;
 	unsigned int code;
 
-	if (ldo->default_uv < base)
+	if (ldo->default_uv < base || ldo->default_uv > max_uv_supported)
 		return -EINVAL;
 	code = DIV_ROUND_UP(ldo->default_uv - base, step);
-	if (base + code * step > ldo->default_uv || code > U8_MAX)
+	if (base + code * step != ldo->default_uv || code > U8_MAX)
 		return -EINVAL;
 	return regmap_write(ldo->chip->map, WL2866D_VSET_BASE + ldo->offset, code);
 }
