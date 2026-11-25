@@ -90,6 +90,20 @@ static const struct regulator_ops wl2866d_ops = {
 	.set_voltage = wl2866d_set_voltage,
 };
 
+static int wl2866d_program_init_voltage(struct wl2866d_ldo *ldo)
+{
+	unsigned int base = ldo->dvdd ? WL2866D_DVDD_BASE_UV : WL2866D_AVDD_BASE_UV;
+	unsigned int step = ldo->dvdd ? WL2866D_DVDD_STEP_UV : WL2866D_AVDD_STEP_UV;
+	unsigned int code;
+
+	if (ldo->default_uv < base)
+		return -EINVAL;
+	code = DIV_ROUND_UP(ldo->default_uv - base, step);
+	if (base + code * step > ldo->default_uv || code > U8_MAX)
+		return -EINVAL;
+	return regmap_write(ldo->chip->map, WL2866D_VSET_BASE + ldo->offset, code);
+}
+
 static int wl2866d_add_ldo(struct wl2866d_chip *chip, struct device_node *node)
 {
 	struct wl2866d_ldo *ldo;
@@ -113,6 +127,9 @@ static int wl2866d_add_ldo(struct wl2866d_chip *chip, struct device_node *node)
 	ldo->dvdd = offset < 2;
 	ldo->default_uv = ldo->dvdd ? 1200000 : 2800000;
 	of_property_read_u32(node, "init-voltage", &ldo->default_uv);
+	ret = wl2866d_program_init_voltage(ldo);
+	if (ret)
+		return ret;
 
 	ldo->desc.name = name;
 	ldo->desc.of_match = name;
