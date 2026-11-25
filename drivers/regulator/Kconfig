@@ -25,6 +25,13 @@ menuconfig REGULATOR
 
 if REGULATOR
 
+config REGULATOR_WL2866D
+	tristate "Willsemi WL2866D regulator support"
+	depends on I2C && OF
+	help
+	  Support the four programmable LDOs in the Willsemi WL2866D
+	  used on Xiaomi Ares (MT6893).
+
 config REGULATOR_DEBUG
 	bool "Regulator debug support"
 	help
