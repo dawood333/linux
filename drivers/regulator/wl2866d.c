@@ -164,7 +164,8 @@ static int wl2866d_add_ldo(struct wl2866d_chip *chip, struct device_node *node)
 	ldo->desc.type = REGULATOR_VOLTAGE;
 	ldo->desc.owner = THIS_MODULE;
 	ldo->desc.ops = &wl2866d_ops;
-	ldo->desc.n_voltages = 1;
+	/* Continuous voltage control: no discrete selector/list is exposed. */
+	ldo->desc.n_voltages = 0;
 
 	cfg.dev = chip->dev;
 	cfg.driver_data = ldo;
