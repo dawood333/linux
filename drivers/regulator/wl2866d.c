@@ -155,7 +155,12 @@ static int wl2866d_add_ldo(struct wl2866d_chip *chip, struct device_node *node)
 	ldo->offset = offset;
 	ldo->dvdd = offset < 2;
 	ldo->init_uv = ldo->dvdd ? 1200000 : 2800000;
-	of_property_read_u32(node, "init-voltage", &ldo->init_uv);
+	if (of_find_property(node, "init-voltage", NULL)) {
+		ret = of_property_read_u32(node, "init-voltage", &ldo->init_uv);
+		if (ret)
+			return dev_err_probe(chip->dev, ret,
+					    "invalid init-voltage for %s\\n", name);
+	}
 	ret = wl2866d_program_init_voltage(ldo);
 	if (ret)
 		return ret;
