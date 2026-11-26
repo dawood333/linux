@@ -31,11 +31,13 @@ struct wl2866d_ldo {
 	struct regulator_desc desc;
 	unsigned int offset;
 	bool dvdd;
-	int default_uv;
+	int init_uv;
 };
 
 static const struct regmap_config wl2866d_regmap_config = {
-	.reg_bits = 8, .val_bits = 8,
+	.reg_bits = 8,
+	.val_bits = 8,
+	.max_register = 0x0f,
 };
 
 static int wl2866d_is_enabled(struct regulator_dev *rdev)
@@ -67,8 +69,6 @@ static int wl2866d_get_voltage(struct regulator_dev *rdev)
 	int ret = regmap_read(ldo->chip->map, WL2866D_VSET_BASE + ldo->offset, &code);
 	if (ret)
 		return ret;
-	if (!code)
-		return ldo->default_uv;
 	return ldo->dvdd ? WL2866D_DVDD_BASE_UV + code * WL2866D_DVDD_STEP_UV :
 		WL2866D_AVDD_BASE_UV + code * WL2866D_AVDD_STEP_UV;
 }
@@ -112,10 +112,10 @@ static int wl2866d_program_init_voltage(struct wl2866d_ldo *ldo)
 		WL2866D_AVDD_MAX_UV;
 	unsigned int code;
 
-	if (ldo->default_uv < base || ldo->default_uv > max_uv_supported)
+	if (ldo->init_uv < base || ldo->init_uv > max_uv_supported)
 		return -EINVAL;
-	code = DIV_ROUND_UP(ldo->default_uv - base, step);
-	if (base + code * step != ldo->default_uv || code > U8_MAX)
+	code = DIV_ROUND_UP(ldo->init_uv - base, step);
+	if (base + code * step != ldo->init_uv || code > U8_MAX)
 		return -EINVAL;
 	return regmap_write(ldo->chip->map, WL2866D_VSET_BASE + ldo->offset, code);
 }
@@ -153,8 +153,8 @@ static int wl2866d_add_ldo(struct wl2866d_chip *chip, struct device_node *node)
 	ldo->chip = chip;
 	ldo->offset = offset;
 	ldo->dvdd = offset < 2;
-	ldo->default_uv = ldo->dvdd ? 1200000 : 2800000;
-	of_property_read_u32(node, "init-voltage", &ldo->default_uv);
+	ldo->init_uv = ldo->dvdd ? 1200000 : 2800000;
+	of_property_read_u32(node, "init-voltage", &ldo->init_uv);
 	ret = wl2866d_program_init_voltage(ldo);
 	if (ret)
 		return ret;
@@ -191,7 +191,7 @@ static int wl2866d_probe(struct i2c_client *client)
 	ret = regmap_read(chip->map, 0x00, &pid);
 	if (ret)
 		return dev_err_probe(chip->dev, ret, "product ID read failed\n");
-	dev_info(chip->dev, "product ID register 0x00 read: 0x%02x\n", pid);
+	dev_info(chip->dev, "chip revision register 0x00 read: 0x%02x\n", pid);
 	ret = regmap_write(chip->map, WL2866D_DISCHARGE_REG, 0xff);
 	if (ret)
 		return dev_err_probe(chip->dev, ret, "discharge setup failed\n");
