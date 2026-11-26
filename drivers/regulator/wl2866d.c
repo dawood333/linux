@@ -191,7 +191,7 @@ static int wl2866d_probe(struct i2c_client *client)
 
 	ret = regmap_read(chip->map, 0x00, &pid);
 	if (ret)
-		return dev_err_probe(chip->dev, ret, "product ID read failed\n");
+		return dev_err_probe(chip->dev, ret, "chip revision read failed\n");
 	dev_info(chip->dev, "chip revision register 0x00 read: 0x%02x\n", pid);
 	/* Enable discharge on all four outputs, preserving undocumented bits. */
 	ret = regmap_update_bits(chip->map, WL2866D_DISCHARGE_REG,
