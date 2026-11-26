@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0
 /* Willsemi WL2866D four-channel regulator driver - Xiaomi Ares port */
 #include <linux/i2c.h>
+#include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/of.h>
 #include <linux/regmap.h>
