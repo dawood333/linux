@@ -192,7 +192,9 @@ static int wl2866d_probe(struct i2c_client *client)
 	if (ret)
 		return dev_err_probe(chip->dev, ret, "product ID read failed\n");
 	dev_info(chip->dev, "chip revision register 0x00 read: 0x%02x\n", pid);
-	ret = regmap_write(chip->map, WL2866D_DISCHARGE_REG, 0xff);
+	/* Enable discharge on all four outputs, preserving undocumented bits. */
+	ret = regmap_update_bits(chip->map, WL2866D_DISCHARGE_REG,
+			  0x8f, 0x8f);
 	if (ret)
 		return dev_err_probe(chip->dev, ret, "discharge setup failed\n");
 
