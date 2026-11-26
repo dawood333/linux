@@ -11,6 +11,7 @@
 #define WL2866D_ENABLE_REG 0x0e
 #define WL2866D_VSET_BASE 0x03
 #define WL2866D_DISCHARGE_REG 0x02
+#define WL2866D_DISCHARGE_ENABLE_MASK 0x8f
 #define WL2866D_DVDD_BASE_UV 600000
 #define WL2866D_DVDD_STEP_UV 6000
 #define WL2866D_DVDD_MAX_UV 1800000
@@ -194,7 +195,8 @@ static int wl2866d_probe(struct i2c_client *client)
 	dev_info(chip->dev, "chip revision register 0x00 read: 0x%02x\n", pid);
 	/* Enable discharge on all four outputs, preserving undocumented bits. */
 	ret = regmap_update_bits(chip->map, WL2866D_DISCHARGE_REG,
-			  0x8f, 0x8f);
+			  WL2866D_DISCHARGE_ENABLE_MASK,
+			  WL2866D_DISCHARGE_ENABLE_MASK);
 	if (ret)
 		return dev_err_probe(chip->dev, ret, "discharge setup failed\n");
 
