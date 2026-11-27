@@ -67,12 +67,22 @@ static int wl2866d_disable(struct regulator_dev *rdev)
 static int wl2866d_get_voltage(struct regulator_dev *rdev)
 {
 	struct wl2866d_ldo *ldo = rdev_get_drvdata(rdev);
-	unsigned int code;
+	unsigned int code, max_code;
 	int ret = regmap_read(ldo->chip->map, WL2866D_VSET_BASE + ldo->offset, &code);
 	if (ret)
 		return ret;
-	return ldo->dvdd ? WL2866D_DVDD_BASE_UV + code * WL2866D_DVDD_STEP_UV :
-		WL2866D_AVDD_BASE_UV + code * WL2866D_AVDD_STEP_UV;
+	if (ldo->dvdd) {
+		max_code = (WL2866D_DVDD_MAX_UV - WL2866D_DVDD_BASE_UV) /
+			WL2866D_DVDD_STEP_UV;
+		if (code > max_code)
+			return -ERANGE;
+		return WL2866D_DVDD_BASE_UV + code * WL2866D_DVDD_STEP_UV;
+	}
+	max_code = (WL2866D_AVDD_MAX_UV - WL2866D_AVDD_BASE_UV) /
+		WL2866D_AVDD_STEP_UV;
+	if (code > max_code)
+		return -ERANGE;
+	return WL2866D_AVDD_BASE_UV + code * WL2866D_AVDD_STEP_UV;
 }
 
 static int wl2866d_set_voltage(struct regulator_dev *rdev, int min_uv, int max_uv,
