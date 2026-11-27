@@ -167,7 +167,8 @@ static int wl2866d_add_ldo(struct wl2866d_chip *chip, struct device_node *node)
 		return ret;
 
 	ldo->desc.name = name;
-	ldo->desc.of_match = name;
+	/* Match the actual DT child node; regulator-name is not its node name. */
+	ldo->desc.of_match = node->name;
 	ldo->desc.type = REGULATOR_VOLTAGE;
 	ldo->desc.owner = THIS_MODULE;
 	ldo->desc.ops = &wl2866d_ops;
