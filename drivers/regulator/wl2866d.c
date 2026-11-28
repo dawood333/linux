@@ -137,7 +137,8 @@ static int wl2866d_add_ldo(struct wl2866d_chip *chip, struct device_node *node)
 	struct wl2866d_ldo *ldo;
 	struct regulator_config cfg = {};
 	const char *name;
-	u32 offset;
+	bool has_min, has_max;
+	u32 offset, min_uv, max_uv;
 	int ret;
 
 	ret = of_property_read_string(node, "regulator-name", &name);
@@ -172,6 +173,29 @@ static int wl2866d_add_ldo(struct wl2866d_chip *chip, struct device_node *node)
 			return dev_err_probe(chip->dev, ret,
 					    "invalid init-voltage for %s\n", name);
 	}
+	/* Validate the initial setting against DT regulator constraints. */
+	has_min = !!of_find_property(node, "regulator-min-microvolt", NULL);
+	has_max = !!of_find_property(node, "regulator-max-microvolt", NULL);
+	if (has_min) {
+		ret = of_property_read_u32(node, "regulator-min-microvolt", &min_uv);
+		if (ret)
+			return dev_err_probe(chip->dev, ret,
+					    "invalid minimum voltage for %s\n", name);
+	}
+	if (has_max) {
+		ret = of_property_read_u32(node, "regulator-max-microvolt", &max_uv);
+		if (ret)
+			return dev_err_probe(chip->dev, ret,
+					    "invalid maximum voltage for %s\n", name);
+	}
+	if (has_min && has_max && min_uv > max_uv)
+		return dev_err_probe(chip->dev, -EINVAL,
+				    "inverted voltage constraints for %s\n", name);
+	if ((has_min && ldo->init_uv < min_uv) ||
+	    (has_max && ldo->init_uv > max_uv))
+		return dev_err_probe(chip->dev, -EINVAL,
+				    "initial voltage violates DT constraints for %s\n", name);
+
 	ret = wl2866d_program_init_voltage(ldo);
 	if (ret)
 		return ret;
